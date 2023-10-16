@@ -1,15 +1,18 @@
-// teocrypt.go
+// Copyright 2021 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// The Teocrypt application is used to encrypt and decrypt text using a key or
+// password on the command line.
 package main
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
+
+	"github.com/teonet-go/teocrypt/crypt"
 )
 
 const (
@@ -37,8 +40,8 @@ func main() {
 	var err error
 	var key []byte
 	if len(passwd) > 0 {
-		key = HashKey(passwd)
-	} else if key, err = GenerateKey(); err != nil {
+		key = crypt.HashKey(passwd)
+	} else if key, err = crypt.GenerateKey(); err != nil {
 		fmt.Printf("can't generate new key, error: %s\n", err)
 		return
 	}
@@ -53,7 +56,7 @@ func main() {
 
 	// Encrypt input data by key
 	if !decrypt {
-		ciphertext, err := Encrypt(key, data)
+		ciphertext, err := crypt.Encrypt(key, data)
 		if err != nil {
 			fmt.Printf("can't encode input text, error: %s\n", err)
 			return
@@ -68,68 +71,9 @@ func main() {
 		fmt.Printf("can't decrypt input text, error: %s\n", err)
 		return
 	}
-	plaintext, err := Decrypt(key, data)
+	plaintext, err := crypt.Decrypt(key, data)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("plain text:\n%s\n", plaintext)
-}
-
-// Encrypt encrypts data by key
-func Encrypt(key, data []byte) ([]byte, error) {
-	blockCipher, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	gcm, err := cipher.NewGCM(blockCipher)
-	if err != nil {
-		return nil, err
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = rand.Read(nonce); err != nil {
-		return nil, err
-	}
-
-	ciphertext := gcm.Seal(nonce, nonce, data, nil)
-
-	return ciphertext, nil
-}
-
-// Decrypt decrypts data by key
-func Decrypt(key, data []byte) ([]byte, error) {
-	blockCipher, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	gcm, err := cipher.NewGCM(blockCipher)
-	if err != nil {
-		return nil, err
-	}
-	nonce, ciphertext := data[:gcm.NonceSize()], data[gcm.NonceSize():]
-
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return plaintext, nil
-}
-
-// GenerateKey generates random key
-func GenerateKey() ([]byte, error) {
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		return nil, err
-	}
-	return key, nil
-}
-
-// HashKey creates a new key from password
-func HashKey(passwd string) []byte {
-	h := sha256.New()
-	h.Write([]byte(passwd))
-	return h.Sum(nil)
 }
