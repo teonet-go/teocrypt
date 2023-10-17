@@ -8,7 +8,10 @@ import (
 	"github.com/teonet-go/teocrypt/config"
 )
 
-const appShortName = "teocrypt-test"
+const (
+	appShortName = "teocrypt-test"
+	configName   = "some-app"
+)
 
 func TestNewMnemonic(t *testing.T) {
 
@@ -61,14 +64,15 @@ func TestSave(t *testing.T) {
 	fmt.Println("privateKey:", privateKey)
 
 	// Save encrypted mnemonic config
-	err = MnemonicConfig{[]byte(mnemonic), []byte(privateKey)}.Save(appShortName)
+	m := MnemonicConfig{[]byte(mnemonic), []byte(privateKey)}
+	err = m.Save(appShortName, configName)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	// Load and print config
-	cfg, err := config.Load[MnemonicConfig](appShortName)
+	cfg, err := config.Load[MnemonicConfig](appShortName, configName)
 	if err != nil {
 		t.Error(err)
 		return
@@ -79,7 +83,7 @@ func TestSave(t *testing.T) {
 
 func TestLoad(t *testing.T) {
 	m := MnemonicConfig{}
-	m.Load(appShortName)
+	m.Load(appShortName, configName)
 
 	fmt.Println("mnemonic:", string(m.Mnemonic))
 	fmt.Println("privateKey:", string(m.PrivateKey))

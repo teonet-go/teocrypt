@@ -14,7 +14,6 @@ import (
 
 const (
 	configBaseDir  = "teonet"
-	configFileName = "teocrypt.cfg"
 )
 
 // config stucture and methods to store teocrypt config to local host.
@@ -24,22 +23,22 @@ type config[T any] struct {
 }
 
 // New creates config object.
-func New[T any](appShortName string, data ...*T) (cfg *config[T], err error) {
+func New[T any](appShortName, configName string, data ...*T) (cfg *config[T], err error) {
 	cfg = new(config[T])
 	if len(data) > 0 {
 		cfg.Data = data[0]
 	} else {
 		cfg.Data = new(T)
 	}
-	if cfg.fileName, err = cfg.createFolder(appShortName); err != nil {
+	if cfg.fileName, err = cfg.createFolder(appShortName, configName); err != nil {
 		return
 	}
 	return
 }
 
 // loadConfig creates config object and load config from local host file.
-func Load[T any](appShortName string, data ...*T) (cfg *config[T], err error) {
-	cfg, err = New[T](appShortName, data...)
+func Load[T any](appShortName, configName string, data ...*T) (cfg *config[T], err error) {
+	cfg, err = New[T](appShortName, configName, data...)
 	cfg.load()
 	return
 }
@@ -101,9 +100,9 @@ func (c *config[T]) load() (err error) {
 }
 
 // createFolder creates config folder and return config fileName.
-func (c *config[T]) createFolder(appShortName string) (fileName string, err error) {
+func (c *config[T]) createFolder(appShortName, configFileName string) (fileName string, err error) {
 
-	fileName, err = c.getFileName(configBaseDir, appShortName, configFileName)
+	fileName, err = c.getFileName(configBaseDir, appShortName, configFileName+".cfg")
 	if err != nil {
 		return
 	}

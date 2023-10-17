@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Crypt package contains functions to Encrypt and Decrypt data using 
+// Crypt package contains functions to Encrypt and Decrypt data using
 // Advanced Encryption Standard (AES).
 package crypt
 
@@ -11,6 +11,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"errors"
 )
 
 // Encrypt encrypts data by key.
@@ -46,6 +47,11 @@ func Decrypt(key, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(data) < gcm.NonceSize() {
+		return nil, errors.New("invalid input file")
+	}
+
 	nonce, ciphertext := data[:gcm.NonceSize()], data[gcm.NonceSize():]
 
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)

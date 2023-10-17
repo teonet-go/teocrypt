@@ -49,7 +49,7 @@ func GenerateKeys(mnemonic string) (privateKey string, publicKey string, err err
 
 // Save saves encrypted by "machineid + password" mnemonic config to this
 // machine on os.UserConfig/teonet_config_dir/appShortName folder.
-func (m MnemonicConfig) Save(appShortName string, passwd ...string) (err error) {
+func (m MnemonicConfig) Save(appShortName, configName string, passwd ...string) (err error) {
 
 	// Get machine id key to encrypt mnemonic config
 	key, err := getKey(passwd...)
@@ -70,7 +70,7 @@ func (m MnemonicConfig) Save(appShortName string, passwd ...string) (err error) 
 	}
 
 	// Save config
-	cfg, err := config.New[MnemonicConfig](appShortName, &m)
+	cfg, err := config.New[MnemonicConfig](appShortName, configName, &m)
 	if err != nil {
 		return
 	}
@@ -80,10 +80,10 @@ func (m MnemonicConfig) Save(appShortName string, passwd ...string) (err error) 
 }
 
 // Load loads from config file and decrypt saved mnemonic config.
-func (m *MnemonicConfig) Load(appShortName string, passwd ...string) (err error) {
+func (m *MnemonicConfig) Load(appShortName, configName string, passwd ...string) (err error) {
 
 	// Load config
-	_, err = config.Load[MnemonicConfig](appShortName, m)
+	_, err = config.Load[MnemonicConfig](appShortName, configName, m)
 	if err != nil {
 		return
 	}
