@@ -14,6 +14,8 @@ import (
 	"errors"
 )
 
+var ErrInvalidInputFile = errors.New("invalid input file")
+
 // Encrypt encrypts data by key.
 func Encrypt(key, data []byte) (ciphertext []byte, err error) {
 	blockCipher, err := aes.NewCipher(key)
@@ -49,7 +51,7 @@ func Decrypt(key, data []byte) ([]byte, error) {
 	}
 
 	if len(data) < gcm.NonceSize() {
-		return nil, errors.New("invalid input file")
+		return nil, ErrInvalidInputFile
 	}
 
 	nonce, ciphertext := data[:gcm.NonceSize()], data[gcm.NonceSize():]
