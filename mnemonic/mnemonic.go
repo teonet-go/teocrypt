@@ -29,7 +29,7 @@ func NewMnemonic() (mnemonic string, err error) {
 	return
 }
 
-// GenerateKeys generates private and public keys from mnemonic.
+// GenerateKeys generates master private and public keys from mnemonic.
 func GenerateKeys(mnemonic string) (privateKey string, publicKey string, err error) {
 
 	// Generate a Bip32 HD wallet from the mnemonic and a user supplied password
@@ -44,6 +44,38 @@ func GenerateKeys(mnemonic string) (privateKey string, publicKey string, err err
 	// Return keys
 	privateKey = masterKey.B58Serialize()
 	publicKey = masterKey.PublicKey().B58Serialize()
+	return
+}
+
+// generateChildPrivateKey generates a child private key from a master private key by
+// index.
+func generateChildPrivateKey(masterKey *bip32.Key, childIdx uint32) (key *bip32.Key, err error) {
+	key, err = masterKey.NewChildKey(childIdx)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// GenerateChildKey generates a child public key from a master private key by
+// index.
+func GenerateChildKey(masterKeyB58 string, childIdx uint32) (key string, err error) {
+
+	// Deserialize master private key
+	masterKey, err := bip32.B58Deserialize(masterKeyB58)
+	if err != nil {
+		return
+	}
+
+	// Generate child private key from master private key
+	childPrivateKey, err := generateChildPrivateKey(masterKey, childIdx)
+	if err != nil {
+		return
+	}
+
+	// Get child public key from child private key and serialize it
+	key = childPrivateKey.PublicKey().B58Serialize()
+
 	return
 }
 
