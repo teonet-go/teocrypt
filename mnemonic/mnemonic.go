@@ -141,6 +141,13 @@ func (m *MnemonicConfig) Load(appShortName, configName string, passwd ...string)
 	return
 }
 
+// IsMnemonicValid attempts to verify that the provided mnemonic is valid.
+// Validity is determined by both the number of words being appropriate,
+// and that all the words in the mnemonic are present in the word list.
+func IsMnemonicValid(mnemonic string) bool {
+	return bip39.IsMnemonicValid(mnemonic)
+}
+
 // getKey generates and returns key created from "machineid + password"
 func getKey(passwd ...string) (key []byte, err error) {
 
