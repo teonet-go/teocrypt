@@ -38,16 +38,20 @@ func New(key string, zip bool, encryptFirst ...bool) *CryptFilename {
 	}
 }
 
+// base64EncodeEscape encode to base64 and replace '/' characters to '_'.
 func (c CryptFilename) base64EncodeEscape(data []byte) string {
 	r := strings.NewReplacer("/", "_")
 	return r.Replace(base64.StdEncoding.EncodeToString(data))
 }
 
+// base64DecodeEscape replace '_' characters to '/' and decode base64 string.
 func (c CryptFilename) base64DecodeEscape(str string) ([]byte, error) {
 	r := strings.NewReplacer("_", "/")
 	return base64.StdEncoding.DecodeString(r.Replace(str))
 }
 
+// zip archives data and returns zip archive data if length of zip archive less
+// than input data length.
 func (c CryptFilename) zip(data []byte) []byte {
 	if !c.zipping {
 		return data
@@ -64,6 +68,7 @@ func (c CryptFilename) zip(data []byte) []byte {
 	return b.Bytes()
 }
 
+// unzip unarchives data if it was archeved or return tha same data.
 func (c CryptFilename) unzip(data []byte) ([]byte, error) {
 	if !c.zipping {
 		return data, nil
@@ -84,7 +89,7 @@ func (c CryptFilename) unzip(data []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// Encrypt encrypts s3 compatible full filename.
+// Encrypt encrypts s3 compatible full filename path.
 func (c CryptFilename) Encrypt(s string) (res string, err error) {
 	parts := strings.Split(s, "/")
 	for i, p := range parts {
@@ -104,7 +109,7 @@ func (c CryptFilename) Encrypt(s string) (res string, err error) {
 			continue
 		}
 
-		// Encrypt
+		// Zip and Encrypt
 		data := c.zip([]byte(p))
 		ciphertext, err := crypt.Encrypt(c.hashKey, data)
 		if err != nil {
@@ -117,7 +122,7 @@ func (c CryptFilename) Encrypt(s string) (res string, err error) {
 	return
 }
 
-// Decrypt decrypts s3 compatible full filename.
+// Decrypt decrypts s3 compatible full filename path.
 func (c CryptFilename) Decrypt(s string) (res string, err error) {
 	parts := strings.Split(s, "/")
 	for i, p := range parts {
@@ -138,7 +143,7 @@ func (c CryptFilename) Decrypt(s string) (res string, err error) {
 			continue
 		}
 
-		// Decrypt
+		// Decrypt and Unzip
 		data, err := c.base64DecodeEscape(p)
 		if err == nil {
 			data, err = crypt.Decrypt(c.hashKey, data)
