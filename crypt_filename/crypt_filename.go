@@ -119,10 +119,7 @@ func (c CryptFilename) Encrypt(s string) (res string, err error) {
 
 		// Zip and Encrypt
 		data := c.zip([]byte(p))
-		ciphertext, err := crypt.Encrypt(c.hashKey, data)
-		if err != nil {
-			return s, err
-		}
+		ciphertext := crypt.EncryptXor(c.hashKey, data)
 		str := c.base64EncodeEscape(ciphertext)
 
 		res += str
@@ -157,8 +154,8 @@ func (c CryptFilename) Decrypt(s string) (res string, err error) {
 		// Decrypt and Unzip
 		data, err := c.base64DecodeEscape(p)
 		if err == nil {
-			data, err = crypt.Decrypt(c.hashKey, data)
-			encrypted = err == nil
+			data = crypt.DecryptXor(c.hashKey, data)
+			encrypted = true // err == nil
 		}
 		if err != nil {
 			data = []byte(p)

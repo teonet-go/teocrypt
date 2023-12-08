@@ -14,9 +14,12 @@ import (
 	"errors"
 )
 
+// ErrInvalidInputFile is returned when the input data is not valid.
 var ErrInvalidInputFile = errors.New("invalid input file")
 
-// Encrypt encrypts data by key.
+// Encrypt encrypts data using AES-GCM with a random nonce.
+// It takes a key and data to encrypt as byte slices, and returns the 
+// ciphertext with nonce prepended and an error if one occurred.
 func Encrypt(key, data []byte) (ciphertext []byte, err error) {
 	blockCipher, err := aes.NewCipher(key)
 	if err != nil {
@@ -38,7 +41,8 @@ func Encrypt(key, data []byte) (ciphertext []byte, err error) {
 	return
 }
 
-// Decrypt decrypts data by key.
+// Decrypt decrypts encrypted data using the provided key.
+// It returns the decrypted plaintext and an error if one occurs.
 func Decrypt(key, data []byte) ([]byte, error) {
 	blockCipher, err := aes.NewCipher(key)
 	if err != nil {
@@ -64,7 +68,38 @@ func Decrypt(key, data []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-// GenerateKey generates random key.
+// EncryptXor encrypts the given data using XOR with the given key.
+// The key is repeated to match the length of the data.
+// Returns the encrypted ciphertext.
+func EncryptXor(key, data []byte) []byte {
+
+	ciphertext := make([]byte, len(data))
+
+	for i := 0; i < len(data); i++ {
+		ciphertext[i] = data[i] ^ key[i%len(key)]
+	}
+
+	return ciphertext
+}
+
+// DecryptXor decrypts the given data using XOR with the given key.
+// The key is repeated to match the length of the data.
+// Returns the decrypted plaintext.
+func DecryptXor(key, data []byte) []byte {
+
+	plaintext := make([]byte, len(data))
+
+	for i := 0; i < len(data); i++ {
+		plaintext[i] = data[i] ^ key[i%len(key)]
+	}
+
+	return plaintext
+}
+
+// GenerateKey generates a cryptographically secure random 32 byte key.
+// It uses the rand package to generate the random bytes and returns
+// the 32 byte key slice. It returns an error if there is a problem
+// reading from the system's random number generator.
 func GenerateKey() ([]byte, error) {
 	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
@@ -73,7 +108,8 @@ func GenerateKey() ([]byte, error) {
 	return key, nil
 }
 
-// HashKey creates a new key from password.
+// HashKey hashes the given password string using SHA256 and returns the hash
+// as a byte slice.
 func HashKey(passwd string) []byte {
 	h := sha256.New()
 	h.Write([]byte(passwd))
