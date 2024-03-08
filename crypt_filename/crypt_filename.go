@@ -10,10 +10,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"strings"
 
 	"github.com/teonet-go/teocrypt/crypt"
+)
+
+var (
+	ErrFilenameIsNotEncrypted = fmt.Errorf("filename is not encrypted")
 )
 
 // CryptFilename contains methods to encrypt and decrypt S3 filenames.
@@ -89,7 +94,10 @@ func (c CryptFilename) unzip(data []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// Encrypt encrypts s3 compatible full filename path.
+// Encrypt encrypts the given string s into an encrypted S3 compatible filename
+// path. It splits the path s into parts, zips and encrypts each part, base64
+// encodes the encrypted parts, and joins them back together into an encrypted
+// path string. The first folder is not encrypted if encryptFirst is false.
 func (c CryptFilename) Encrypt(s string) (res string, err error) {
 	parts := strings.Split(s, "/")
 	for i, p := range parts {
@@ -111,10 +119,7 @@ func (c CryptFilename) Encrypt(s string) (res string, err error) {
 
 		// Zip and Encrypt
 		data := c.zip([]byte(p))
-		ciphertext, err := crypt.Encrypt(c.hashKey, data)
-		if err != nil {
-			return s, err
-		}
+		ciphertext := crypt.EncryptXor(c.hashKey, data)
 		str := c.base64EncodeEscape(ciphertext)
 
 		res += str
@@ -122,8 +127,11 @@ func (c CryptFilename) Encrypt(s string) (res string, err error) {
 	return
 }
 
-// Decrypt decrypts s3 compatible full filename path.
+// Decrypt decrypts an encrypted S3 compatible filename path. It splits the path
+// into parts, decrypts each part if needed, uncompresses the decrypted parts,
+// and reassembles the decrypted path parts into the full decrypted path string.
 func (c CryptFilename) Decrypt(s string) (res string, err error) {
+	var encrypted bool
 	parts := strings.Split(s, "/")
 	for i, p := range parts {
 
@@ -146,7 +154,8 @@ func (c CryptFilename) Decrypt(s string) (res string, err error) {
 		// Decrypt and Unzip
 		data, err := c.base64DecodeEscape(p)
 		if err == nil {
-			data, err = crypt.Decrypt(c.hashKey, data)
+			data = crypt.DecryptXor(c.hashKey, data)
+			encrypted = true // err == nil
 		}
 		if err != nil {
 			data = []byte(p)
@@ -154,6 +163,10 @@ func (c CryptFilename) Decrypt(s string) (res string, err error) {
 		data, _ = c.unzip(data)
 
 		res += string(data)
+	}
+
+	if !encrypted {
+		err = ErrFilenameIsNotEncrypted
 	}
 	return
 }
