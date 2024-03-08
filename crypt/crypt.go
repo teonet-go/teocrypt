@@ -1,4 +1,4 @@
-// Copyright 2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2023-24 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -12,6 +12,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"io"
 )
 
 var ErrInvalidInputFile = errors.New("invalid input file")
@@ -34,6 +35,33 @@ func Encrypt(key, data []byte) (ciphertext []byte, err error) {
 	}
 
 	ciphertext = gcm.Seal(nonce, nonce, data, nil)
+
+	return
+}
+
+// EncryptWriter creates stream cipher writer to encrypt output file.
+func EncryptWriter(outputFile io.Writer, key []byte) (writer io.Writer, err error) {
+
+	// Create cipher block
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+
+	// Crete iv and write it to output file
+	iv := make([]byte, block.BlockSize())
+	if _, err = rand.Read(iv); err != nil {
+		return
+	}
+	if _, err = outputFile.Write(iv); err != nil {
+		return
+	}
+
+	// Create stream cipher
+	stream := cipher.NewCTR(block, iv)
+
+	// Create stream cipher writer
+	writer = &cipher.StreamWriter{S: stream, W: outputFile}
 
 	return
 }
@@ -62,6 +90,31 @@ func Decrypt(key, data []byte) ([]byte, error) {
 	}
 
 	return plaintext, nil
+}
+
+// DecryptReader creates stream cipher reader to decrypt input file.
+func DecryptReader(inputFile io.Reader, key []byte) (reader io.Reader, err error) {
+
+	// Create cipher block
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+
+	// Read iv from input file
+	iv := make([]byte, block.BlockSize())
+	_, err = io.ReadFull(inputFile, iv)
+	if err != nil {
+		return
+	}
+
+	// Create stream cipher
+	stream := cipher.NewCTR(block, iv)
+
+	// Create stream cipher reader
+	reader = &cipher.StreamReader{S: stream, R: inputFile}
+
+	return
 }
 
 // GenerateKey generates random key.
