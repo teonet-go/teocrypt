@@ -49,9 +49,13 @@ func main() {
 	var key []byte
 	if len(passwd) > 0 {
 		key = crypt.HashKey(passwd)
-	} else if key, err = crypt.GenerateKey(); err != nil {
-		fmt.Printf("can't generate new key, error: %s\n", err)
-		return
+	} else {
+		if key, err = crypt.GenerateKey(); err != nil {
+			fmt.Printf("can't generate new key, error: %s\n", err)
+			os.Exit(1)
+			return
+		}
+		fmt.Printf("the password is not specified, new key generated: %x\n", key)
 	}
 
 	// Open input and output files
@@ -67,6 +71,7 @@ func main() {
 		writer, err = crypt.EncryptWriter(outputFile, key)
 		if err != nil {
 			fmt.Printf("can't create encrypt writer, error: %s\n", err)
+			os.Exit(2)
 			return
 		}
 
@@ -79,7 +84,8 @@ func main() {
 		var reader io.Reader
 		reader, err = crypt.DecryptReader(inputFile, key)
 		if err != nil {
-			fmt.Printf("can't create encrypt writer, error: %s\n", err)
+			fmt.Printf("can't create decrypt reader, error: %s\n", err)
+			os.Exit(3)
 			return
 		}
 
@@ -89,6 +95,7 @@ func main() {
 
 	if err != nil {
 		fmt.Printf("can't execute command, error: %s\n", err)
+		os.Exit(4)
 		return
 	}
 
